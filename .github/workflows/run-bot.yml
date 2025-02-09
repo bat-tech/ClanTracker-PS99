@@ -28,5 +28,5 @@ jobs:
       - name: Run FMLY Bot
         env:
           DISCORD_TOKEN_FMLY: ${{ secrets.DISCORD_TOKEN_FMLY }}
-        run: python FMLYBot.py
+        run: python FMLYBot copy.py
 
