@@ -19,7 +19,7 @@ ROBLOX_USER_API = "https://users.roblox.com/v1/users"
 PREVIOUS_POINTS_FILE = "previous_points_fmly.json"
 previous_points = {}
 
-# 🔹 Load previous points from the JSON file
+# 🔹 Load previous points from JSON file
 def load_previous_points():
     global previous_points
     if os.path.exists(PREVIOUS_POINTS_FILE):
@@ -32,13 +32,12 @@ def load_previous_points():
     else:
         previous_points = {}
 
-# 🔹 Save the updated points to the JSON file
+# 🔹 Save updated points to JSON file
 def save_previous_points():
     with open(PREVIOUS_POINTS_FILE, "w") as f:
         json.dump(previous_points, f)
 
 def fetch_clan_data():
-    """Fetch FMLY clan data from the API"""
     try:
         response = requests.get(CLAN_API)
         response.raise_for_status()
@@ -55,7 +54,6 @@ def fetch_clan_data():
         return None
 
 def fetch_clans_data():
-    """Fetch leaderboard data for all clans"""
     try:
         response = requests.get(CLANS_API)
         response.raise_for_status()
@@ -64,7 +62,6 @@ def fetch_clans_data():
         return None
 
 def get_roblox_usernames(user_ids):
-    """Fetch Roblox usernames based on user IDs"""
     try:
         data = {"userIds": user_ids, "excludeBannedUsers": True}
         response = requests.post(ROBLOX_USER_API, json=data)
@@ -75,7 +72,6 @@ def get_roblox_usernames(user_ids):
 
 @tasks.loop(minutes=10)
 async def update_clan_stats():
-    """Fetch clan stats and send updates to Discord"""
     global previous_points
     load_previous_points()
 
@@ -88,25 +84,26 @@ async def update_clan_stats():
     place = clan_data["Place"]
     total_points = clan_data["Points"]
     contributions = clan_data["PointContributions"]
-
+    
     if not contributions:
         print("⚠ No contributions found! Skipping update.")
         return
 
     user_ids = [user["UserID"] for user in contributions]
-    user_data = get_roblox_usernames(user_ids)  # 🔹 Now correctly maps user IDs to usernames
-
+    user_data = get_roblox_usernames(user_ids)
+    
     changes = {}
     for user in contributions:
-        user_id = user["UserID"]  # Keep as an integer for Roblox API lookup
+        user_id = str(user["UserID"])
         current_points = user["Points"]
-        previous = previous_points.get(str(user_id), current_points)
+        
+        previous = previous_points.get(user_id, current_points)
         change = current_points - previous
         estimated_hourly = change * 6
         changes[user_id] = (change, estimated_hourly)
-        previous_points[str(user_id)] = current_points  # Save updated points
-
-    save_previous_points()  # Save points to JSON after update
+        previous_points[user_id] = current_points
+    
+    save_previous_points()
 
     sorted_members = sorted(contributions, key=lambda x: x["Points"], reverse=True)
     
@@ -132,31 +129,29 @@ async def update_clan_stats():
         
         sent_message = await channel.send(embed=embed)
         print(f"✅ Sent main clan stats message: {sent_message.id}")
-
+        
         for i in range(0, len(sorted_members), 25):
-            print(f"📤 Sending leaderboard batch {i+1} - {min(i+25, len(sorted_members))}")
             member_embed = discord.Embed(title=f"👥 **Top Clan Members ({i+1}-{min(i+25, len(sorted_members))})**", color=0x00FF00)
             batch = sorted_members[i:i+25]
-
+            
             for rank, user in enumerate(batch, start=i+1):
-                user_id = user["UserID"]
-                username, display_name = user_data.get(user_id, ("Unknown", "Unknown"))  # 🔹 Now correctly retrieves usernames
+                user_id = str(user["UserID"])
+                username, display_name = user_data.get(int(user_id), ("Unknown", "Unknown"))
                 total_user_points = user["Points"]
                 point_change, est_hourly = changes.get(user_id, (0, 0))
-
+                
                 member_embed.add_field(
                     name=f"{rank}. {display_name} (@{username})",
                     value=f"⭐ {total_user_points:,} 🔼 {point_change:,} / 10min ⏰ {est_hourly:,} / hr",
                     inline=False
                 )
-
+            
             sent_member_message = await channel.send(embed=member_embed)
             print(f"✅ Sent member leaderboard batch: {sent_member_message.id}")
             await asyncio.sleep(1)
 
 @bot.event
 async def on_ready():
-    """Ensure bot is fully connected before running tasks"""
     await bot.wait_until_ready()
     print(f"{bot.user.name} is online!")
     update_clan_stats.start()

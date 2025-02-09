@@ -2,8 +2,8 @@ name: Run Both Discord Bots
 
 on:
   schedule:
-    - cron: '*/10 * * * *'  # Runs every 10 minutes
-  workflow_dispatch:  # Allows manual start
+    - cron: "*/10 * * * *" # Runs every 10 minutes
+  workflow_dispatch: # Allows manual trigger
 
 jobs:
   run-discord-bots:
@@ -12,13 +12,46 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v3
 
-      - name: Set up Python 3.12
+      - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.12'
+          python-version: "3.12"
 
+<<<<<<< HEAD
       - name: Install Dependencies
         run: pip install -r requirements.txt
+=======
+      - name: Upgrade Pip and Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Restore Previous Points JSON (OG99 & FMLY)
+        uses: actions/cache@v3
+        with:
+          path: |
+            previous_points_og99.json
+            previous_points_fmly.json
+          key: previous-points-${{ github.run_id }}
+          restore-keys: |
+            previous-points-
+
+      - name: Debug JSON Persistence
+        run: |
+          if [ -f "previous_points_og99.json" ]; then
+            echo "✅ OG99 JSON exists."
+          else
+            echo "{}" > previous_points_og99.json
+            echo "⚠ OG99 JSON file was missing. Created an empty one."
+          fi
+
+          if [ -f "previous_points_fmly.json" ]; then
+            echo "✅ FMLY JSON exists."
+          else
+            echo "{}" > previous_points_fmly.json
+            echo "⚠ FMLY JSON file was missing. Created an empty one."
+          fi
+>>>>>>> 7b3aa67 (Fix JSON persistence for point tracking)
 
       # ✅ Restore previous points JSON files (OG99 & FMLY)
       - name: Restore Previous Points JSON (OG99 & FMLY)
@@ -57,6 +90,7 @@ jobs:
       - name: Run FMLY Bot
         env:
           DISCORD_TOKEN_FMLY: ${{ secrets.DISCORD_TOKEN_FMLY }}
+<<<<<<< HEAD
         run: python FMLYBot2.py &
 
       # ✅ Prevent workflow from finishing early (keep it alive for 10 minutes)
@@ -78,3 +112,17 @@ jobs:
             echo "⚠ FMLY JSON file missing!"
           fi
           
+=======
+        run: python FMLYBot2.py
+
+      - name: Keep Workflow Running
+        run: sleep 30 # Allow time for logs
+
+      - name: Save Updated JSON Files
+        uses: actions/cache@v3
+        with:
+          path: |
+            previous_points_og99.json
+            previous_points_fmly.json
+          key: previous-points-${{ github.run_id }}
+>>>>>>> 7b3aa67 (Fix JSON persistence for point tracking)
