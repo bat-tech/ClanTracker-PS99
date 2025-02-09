@@ -63,8 +63,18 @@ jobs:
       - name: Keep Workflow Running
         run: sleep 30
 
-      # ✅ Save Updated JSON Files After the Bots Finish Running
+      # ✅ Save Updated JSON Files (Only If They Exist)
       - name: Save Updated JSON Files
         run: |
-          cp previous_points_og99.json $GITHUB_WORKSPACE/
-          cp previous_points_fmly.json $GITHUB_WORKSPACE/
+          if [ -f "previous_points_og99.json" ]; then
+            echo "✅ OG99 JSON exists, no need to copy."
+          else
+            echo "⚠ OG99 JSON file missing!"
+          fi
+
+          if [ -f "previous_points_fmly.json" ]; then
+            echo "✅ FMLY JSON exists, no need to copy."
+          else
+            echo "⚠ FMLY JSON file missing!"
+          fi
+          
