@@ -56,7 +56,7 @@ jobs:
       - name: Run FMLY Bot
         env:
           DISCORD_TOKEN_FMLY: ${{ secrets.DISCORD_TOKEN_FMLY }}
-        run: python FMLYBot2.py
+        run: python FMLYBot2.py &
 
       - name: Keep Workflow Running
         run: sleep 30 # Allow time for logs
