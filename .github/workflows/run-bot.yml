@@ -25,9 +25,12 @@ jobs:
       - name: Run OG99 Bot
         env:
           DISCORD_TOKEN_OG99: ${{ secrets.DISCORD_TOKEN_OG99 }}
-        run: python OG99-Bot.py &  # Runs OG99 bot in the background
+        run: python OG99-Bot.py &  # Run in background
 
       - name: Run FMLY Bot
         env:
           DISCORD_TOKEN_FMLY: ${{ secrets.DISCORD_TOKEN_FMLY }}
-        run: python FMLYBot2.py
+        run: python FMLYBot2.py &  # Run in background
+
+      - name: Keep Workflow Active for a Short Time
+        run: sleep 30  # Prevents workflow from stopping too fast
