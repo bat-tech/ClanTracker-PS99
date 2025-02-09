@@ -15,7 +15,20 @@ CLAN_API = "https://ps99.biggamesapi.io/api/clan/OG99"
 CLANS_API = "https://ps99.biggamesapi.io/api/clans?page=1&pageSize=100&sort=Points&sortOrder=desc"
 ROBLOX_USER_API = "https://users.roblox.com/v1/users"
 
+PREVIOUS_POINTS_FILE = "previous_points_og99.json"
 previous_points = {}
+
+def save_previous_points():
+    with open(PREVIOUS_POINTS_FILE, "w") as f:
+        json.dump(previous_points, f)
+
+def load_previous_points():
+    global previous_points
+    if os.path.exists(PREVIOUS_POINTS_FILE):
+        with open(PREVIOUS_POINTS_FILE, "r") as f:
+            previous_points = json.load(f)
+    else:
+        previous_points = {}
 
 def fetch_clan_data():
     response = requests.get(CLAN_API)
@@ -25,17 +38,10 @@ def fetch_clan_data():
         if not battle:
             return None
 
-        place = battle.get("Place")
-        points = battle.get("Points")
-        contributions = battle.get("PointContributions", [])
-
-        if place is None or points is None:
-            return None
-
         return {
-            "Place": place,
-            "Points": points,
-            "PointContributions": contributions
+            "Place": battle.get("Place"),
+            "Points": battle.get("Points"),
+            "PointContributions": battle.get("PointContributions", [])
         }
 
     except json.JSONDecodeError:
@@ -58,34 +64,32 @@ def get_roblox_usernames(user_ids):
 @tasks.loop(minutes=10)
 async def update_clan_stats():
     global previous_points
+    load_previous_points()
+
     clan_data = fetch_clan_data()
     clans_data = fetch_clans_data()
     if not clan_data or not clans_data:
         return
     
-    place = clan_data.get("Place")
-    total_points = clan_data.get("Points")
-    contributions = clan_data.get("PointContributions", [])
-    
-    if place is None or total_points is None:
-        return
+    place = clan_data["Place"]
+    total_points = clan_data["Points"]
+    contributions = clan_data["PointContributions"]
     
     user_ids = [user["UserID"] for user in contributions]
     user_data = get_roblox_usernames(user_ids)
-    
-    if not previous_points:
-        previous_points = {user["UserID"]: user["Points"] for user in contributions}
-    
+
     changes = {}
     for user in contributions:
         user_id = user["UserID"]
         current_points = user["Points"]
-        previous = previous_points.get(user_id, current_points)
+        previous = previous_points.get(str(user_id), current_points)
         change = current_points - previous
         estimated_hourly = change * 6
         changes[user_id] = (change, estimated_hourly)
-        previous_points[user_id] = current_points
-    
+        previous_points[str(user_id)] = current_points
+
+    save_previous_points()
+
     sorted_members = sorted(contributions, key=lambda x: x["Points"], reverse=True)
     
     clan_names = [clan for clan in clans_data if clan.get("Name") == "OG99"]
@@ -107,19 +111,6 @@ async def update_clan_stats():
         embed.add_field(name="🟩 Points to Pass", value=f"{points_above:,} ({clan_above['Name']})" if clan_above else "N/A", inline=False)
         embed.add_field(name="🟥 Points for Lower Clan to Surpass", value=f"{points_below:,} ({clan_below['Name']})" if clan_below else "N/A", inline=False)
         await channel.send(embed=embed)
-        
-        for i in range(0, len(sorted_members), 25):
-            member_embed = discord.Embed(title="👥 **Top Clan Members**", color=0x00FF00)
-            batch = sorted_members[i:i+25]
-            for rank, user in enumerate(batch, start=i+1):
-                user_id = user["UserID"]
-                username, display_name = user_data.get(user_id, ("Unknown", "Unknown"))
-                total_user_points = user["Points"]
-                point_change, est_hourly = changes.get(user_id, (0, 0))
-                member_embed.add_field(name=f"{rank}. {display_name} (@{username})", 
-                                       value=f"⭐ {total_user_points:,} 🔼 {point_change:,} / 10min ⏰ {est_hourly:,} / hr",
-                                       inline=False)
-            await channel.send(embed=member_embed)
 
 @bot.event
 async def on_ready():
