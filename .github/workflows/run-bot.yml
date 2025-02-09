@@ -12,25 +12,55 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v3
 
-      - name: Set up Python 3.12
+      - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.12'
+          python-version: '3.x'
 
-      - name: Upgrade Pip and Install Dependencies
+      - name: Install Dependencies
+        run: pip install -r requirements.txt
+
+      # ✅ Restore previous points JSON files (OG99 & FMLY)
+      - name: Restore Previous Points JSON (OG99 & FMLY)
+        uses: actions/cache@v3
+        with:
+          path: |
+            previous_points_og99.json
+            previous_points_fmly.json
+          key: previous-points-${{ github.run_id }}
+          restore-keys: previous-points-
+
+      # ✅ Debug: Check if JSON files exist before running the bots
+      - name: Debug JSON Persistence
         run: |
-          python -m pip install --upgrade pip
-          pip install --no-cache-dir -r requirements.txt
+          if [ -f "previous_points_og99.json" ]; then
+            echo "✅ OG99 JSON file exists. Showing contents:"
+            cat previous_points_og99.json
+          else
+            echo "⚠ OG99 JSON file does not exist. First run?"
+          fi
+          
+          if [ -f "previous_points_fmly.json" ]; then
+            echo "✅ FMLY JSON file exists. Showing contents:"
+            cat previous_points_fmly.json
+          else
+            echo "⚠ FMLY JSON file does not exist. First run?"
+          fi
 
+      # ✅ Run OG99 Bot
       - name: Run OG99 Bot
         env:
           DISCORD_TOKEN_OG99: ${{ secrets.DISCORD_TOKEN_OG99 }}
-        run: python OG99-Bot.py &  # Run in background
+        run: python OG99-Bot.py &
 
+      # ✅ Run FMLY Bot
       - name: Run FMLY Bot
         env:
           DISCORD_TOKEN_FMLY: ${{ secrets.DISCORD_TOKEN_FMLY }}
-        run: python FMLYBot2.py &  # Run in background
+        run: python FMLYBot2.py
 
-      - name: Keep Workflow Active for a Short Time
-        run: sleep 30  # Prevents workflow from stopping too fast
+      # ✅ Save Updated JSON Files After the Bots Finish Running
+      - name: Save Updated JSON Files
+        run: |
+          cp previous_points_og99.json $GITHUB_WORKSPACE/
+          cp previous_points_fmly.json $GITHUB_WORKSPACE/
