@@ -69,7 +69,7 @@ def get_roblox_usernames(user_ids):
         data = {"userIds": user_ids, "excludeBannedUsers": True}
         response = requests.post(ROBLOX_USER_API, json=data)
         response.raise_for_status()
-        return {user["id"]: (user["name"], user["displayName"]) for user in response.json().get("data", [])}
+        return {int(user["id"]): (user["name"], user["displayName"]) for user in response.json().get("data", [])}
     except requests.RequestException:
         return {}
 
@@ -94,17 +94,17 @@ async def update_clan_stats():
         return
 
     user_ids = [user["UserID"] for user in contributions]
-    user_data = get_roblox_usernames(user_ids)
+    user_data = get_roblox_usernames(user_ids)  # 🔹 Now correctly maps user IDs to usernames
 
     changes = {}
     for user in contributions:
-        user_id = str(user["UserID"])  # Convert to string for JSON consistency
+        user_id = user["UserID"]  # Keep as an integer for Roblox API lookup
         current_points = user["Points"]
-        previous = previous_points.get(user_id, current_points)
+        previous = previous_points.get(str(user_id), current_points)
         change = current_points - previous
         estimated_hourly = change * 6
         changes[user_id] = (change, estimated_hourly)
-        previous_points[user_id] = current_points  # Save updated points
+        previous_points[str(user_id)] = current_points  # Save updated points
 
     save_previous_points()  # Save points to JSON after update
 
@@ -139,8 +139,8 @@ async def update_clan_stats():
             batch = sorted_members[i:i+25]
 
             for rank, user in enumerate(batch, start=i+1):
-                user_id = str(user["UserID"])
-                username, display_name = user_data.get(user_id, ("Unknown", "Unknown"))
+                user_id = user["UserID"]
+                username, display_name = user_data.get(user_id, ("Unknown", "Unknown"))  # 🔹 Now correctly retrieves usernames
                 total_user_points = user["Points"]
                 point_change, est_hourly = changes.get(user_id, (0, 0))
 
