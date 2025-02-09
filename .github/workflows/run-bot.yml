@@ -47,17 +47,21 @@ jobs:
             echo "⚠ FMLY JSON file does not exist. First run?"
           fi
 
-      # ✅ Run OG99 Bot
+      # ✅ Run OG99 Bot in the background
       - name: Run OG99 Bot
         env:
           DISCORD_TOKEN_OG99: ${{ secrets.DISCORD_TOKEN_OG99 }}
         run: python OG99-Bot.py &
 
-      # ✅ Run FMLY Bot
+      # ✅ Run FMLY Bot in the background
       - name: Run FMLY Bot
         env:
           DISCORD_TOKEN_FMLY: ${{ secrets.DISCORD_TOKEN_FMLY }}
-        run: python FMLYBot2.py
+        run: python FMLYBot2.py &
+
+      # ✅ Prevent workflow from finishing early (keep it alive for 10 minutes)
+      - name: Keep Workflow Running
+        run: sleep 600
 
       # ✅ Save Updated JSON Files After the Bots Finish Running
       - name: Save Updated JSON Files
