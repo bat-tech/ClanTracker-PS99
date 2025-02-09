@@ -2,3 +2,5 @@ FMLYBot.py
 FMLYBot.py
 .env
 node_modules/
+previous_points_fmly.json
+previous_points_og99.json
