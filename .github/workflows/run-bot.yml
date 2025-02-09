@@ -1,0 +1,32 @@
+name: Run Both Discord Bots
+
+on:
+  schedule:
+    - cron: '*/30 * * * *'  # Runs every 30 minutes
+  workflow_dispatch:  # Allows manual start
+
+jobs:
+  run-discord-bots:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
+
+      - name: Install Dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run OG99 Bot
+        env:
+          DISCORD_TOKEN_OG99: ${{ secrets.DISCORD_TOKEN_OG99 }}
+        run: python OG99-Bot.py &
+
+      - name: Run FMLY Bot
+        env:
+          DISCORD_TOKEN_FMLY: ${{ secrets.DISCORD_TOKEN_FMLY }}
+        run: python FMLYBot.py
+
