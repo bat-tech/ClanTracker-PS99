@@ -16,7 +16,6 @@ CLANS_API = "https://ps99.biggamesapi.io/api/clans?page=1&pageSize=100&sort=Poin
 ROBLOX_USER_API = "https://users.roblox.com/v1/users"
 
 previous_points = {}
-message_cache = None
 
 def fetch_clan_data():
     response = requests.get(CLAN_API)
@@ -58,7 +57,7 @@ def get_roblox_usernames(user_ids):
 
 @tasks.loop(minutes=10)
 async def update_clan_stats():
-    global previous_points, message_cache
+    global previous_points
     clan_data = fetch_clan_data()
     clans_data = fetch_clans_data()
     if not clan_data or not clans_data:
@@ -103,15 +102,25 @@ async def update_clan_stats():
     channel = bot.get_channel(CHANNEL_ID)
     if channel:
         embed = discord.Embed(title="🏆 **FMLY Clan Stats**", color=0xFFD700)
-        embed.add_field(name="🥇 Placement", value=f"{place}", inline=True)
-        embed.add_field(name="⭐ Total Points", value=f"{total_points:,}", inline=True)
+        embed.add_field(name="🥇 Placement", value=f"{place}" if place else "Unknown", inline=True)
+        embed.add_field(name="⭐ Total Points", value=f"{total_points:,}" if total_points else "0", inline=True)
         embed.add_field(name="🟩 Points to Pass", value=f"{points_above:,} ({clan_above['Name']})" if clan_above else "N/A", inline=False)
         embed.add_field(name="🟥 Points for Lower Clan to Surpass", value=f"{points_below:,} ({clan_below['Name']})" if clan_below else "N/A", inline=False)
+        await channel.send(embed=embed)
         
-        if message_cache:
-            await message_cache.edit(embed=embed)
-        else:
-            message_cache = await channel.send(embed=embed)
+        # Send top clan members in batches of 25 (Discord embed limit)
+        for i in range(0, len(sorted_members), 25):
+            member_embed = discord.Embed(title="👥 **Top Clan Members**", color=0x00FF00)
+            batch = sorted_members[i:i+25]
+            for rank, user in enumerate(batch, start=i+1):
+                user_id = user["UserID"]
+                username, display_name = user_data.get(user_id, ("Unknown", "Unknown"))
+                total_user_points = user["Points"]
+                point_change, est_hourly = changes.get(user_id, (0, 0))
+                member_embed.add_field(name=f"{rank}. {display_name} (@{username})", 
+                                       value=f"⭐ {total_user_points:,} 🔼 {point_change:,} / 10min ⏰ {est_hourly:,} / hr",
+                                       inline=False)
+            await channel.send(embed=member_embed)
 
 @bot.event
 async def on_ready():
