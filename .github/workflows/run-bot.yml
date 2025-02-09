@@ -61,7 +61,7 @@ jobs:
 
       # ✅ Prevent workflow from finishing early (keep it alive for 10 minutes)
       - name: Keep Workflow Running
-        run: sleep 600
+        run: sleep 30
 
       # ✅ Save Updated JSON Files After the Bots Finish Running
       - name: Save Updated JSON Files
