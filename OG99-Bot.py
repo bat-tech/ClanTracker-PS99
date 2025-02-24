@@ -6,7 +6,7 @@ import asyncio
 from discord.ext import commands, tasks
 
 TOKEN = os.getenv("DISCORD_TOKEN_OG99")
-CHANNEL_ID = 1334559499503013930
+CHANNEL_ID = 1343403322186666077
 
 intents = discord.Intents.default()
 intents.message_content = True
