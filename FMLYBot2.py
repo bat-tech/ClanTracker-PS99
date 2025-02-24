@@ -42,7 +42,7 @@ def fetch_clan_data():
         response = requests.get(CLAN_API)
         response.raise_for_status()
         data = response.json()
-        battle = data.get("data", {}).get("Battles", {}).get("ValBattle", {})
+        battle = data.get("data", {}).get("Battles", {}).get("CardBattle", {})
         if not battle:
             return None
         return {
