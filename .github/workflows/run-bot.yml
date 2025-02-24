@@ -2,7 +2,7 @@ name: Run Both Discord Bots
 
 on:
   schedule:
-    - cron: "*/60 * * * *" # Runs every 10 minutes
+    - cron: "*/1 * * * *" # Runs every 10 minutes
   workflow_dispatch: # Allows manual trigger
 
 jobs:
