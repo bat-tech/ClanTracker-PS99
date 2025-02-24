@@ -120,7 +120,7 @@ async def update_clan_stats():
     
     channel = bot.get_channel(CHANNEL_ID)
     if channel:
-        embed = discord.Embed(title="🏆 **OG99 Clan Stats**", color=0xFFD700)
+        embed = discord.Embed(title="🏆 **OG99 Clan Stats**", color=0xD500FF)
         embed.add_field(name="🥇 Placement", value=f"{place}" if place else "Unknown", inline=True)
         embed.add_field(name="⭐ Total Points", value=f"{total_points:,}" if total_points else "0", inline=True)
         embed.add_field(name="🟩 Points to Pass", value=f"{points_above:,} ({clan_above['Name']})" if clan_above else "N/A", inline=False)
@@ -131,7 +131,7 @@ async def update_clan_stats():
 
         for i in range(0, len(sorted_members), 25):
             print(f"📤 Sending leaderboard batch {i+1} - {min(i+25, len(sorted_members))}")
-            member_embed = discord.Embed(title=f"👥 **Top Clan Members ({i+1}-{min(i+25, len(sorted_members))})**", color=0x00FF00)
+            member_embed = discord.Embed(title=f"👥 **Top Clan Members ({i+1}-{min(i+25, len(sorted_members))})**", color=0x00EEFF)
             batch = sorted_members[i:i+25]
 
             for rank, user in enumerate(batch, start=i+1):
